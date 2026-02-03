@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SWU Draft Timer | longorefisher</title>
+    <style>
+        :root {
+            --sw-blue: #2e5bff;
+            --sw-yellow: #ffe81f;
+            --sw-red: #ff4444;
+            --sw-dark: #0a0a0a;
+            --sw-panel: #1a1a1a;
+            --sw-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--sw-dark);
+            color: var(--sw-text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .header-section { text-align: center; margin-bottom: 20px; width: 100%; }
+        h1 { 
+            color: var(--sw-yellow); 
+            margin: 0; 
+            font-size: 2rem; 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            line-height: 1.1;
+        }
+        .subtitle { 
+            color: #888; 
+            font-size: 1.2rem; 
+            margin-top: 10px; 
+            font-style: italic; 
+        }
+
+        .wrapper { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 12px; }
+
+        #script-container {
+            background: #222;
+            border-left: 8px solid var(--sw-blue);
+            padding: 1.2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+
+        .script-line { font-size: 1.2rem; margin: 8px 0; font-weight: 500; color: #ddd; line-height: 1.4; }
+        .script-line b { color: var(--sw-yellow); }
+        .direction { color: var(--sw-blue); text-transform: uppercase; font-weight: 800; }
+
+        #display-panel {
+            background: var(--sw-panel);
+            padding: 1.5rem;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid #333;
+        }
+
+        #phase-title {
+            color: var(--sw-blue);
+            letter-spacing: 2px;
+            margin: 0;
+            font-size: 2.5rem; 
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        #cards-left-display {
+            font-size: 1.4rem;
+            color: var(--sw-yellow);
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        #timer {
+            font-size: 28vw;
+            max-size: 180px;
+            font-weight: 900;
+            line-height: 1;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .nav-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+        button {
+            padding: 1rem 0.5rem; font-size: 1.1rem; cursor: pointer; border: none;
+            border-radius: 12px; font-weight: bold; text-transform: uppercase;
+        }
+
+        #action-btn { background: var(--sw-blue); color: white; grid-column: span 2; padding: 1.5rem 0.5rem; font-size: 1.4rem; }
+        #pause-btn { background: #444; color: white; }
+        #reset-btn { background: #2a2a2a; color: #666; font-size: 0.8rem; }
+        .nav-btn { background: #333; color: #bbb; font-size: 0.9rem; }
+
+        .history-container { background: #111; border-radius: 8px; border: 1px solid #222; margin-top: 10px; }
+        .history-header {
+            padding: 8px; background: #1a1a1a; font-size: 0.8rem; font-weight: bold;
+            color: #555; text-transform: uppercase; text-align: center;
+        }
+
+        #history-log { height: 100px; overflow-y: auto; padding: 10px; font-family: monospace; font-size: 0.8rem; }
+        .log-entry { color: #666; border-bottom: 1px solid #1a1a1a; padding: 4px 0; }
+
+        .legal-footnote { font-size: 0.7rem; color: #444; text-align: center; margin-top: 20px; padding-bottom: 30px; }
+
+        .warning { color: var(--sw-red) !important; animation: blink 1s infinite; }
+        .waiting { color: var(--sw-yellow); }
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+        /* Desktop Adjustments */
+        @media (min-width: 600px) {
+            h1 { font-size: 3.5rem; }
+            #timer { font-size: 10rem; }
+            #phase-title { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-section">
+        <h1>Star Wars Unlimited Draft Timer</h1>
+        <div class="subtitle">Created by longorefisher (Matthew Fisher)</div>
+    </div>
+
+    <div class="wrapper">
+        <div id="script-container">
+            <div id="instr-1" class="script-line">1) --</div>
+            <div id="instr-2" class="script-line">2) Pick up cards, you have <b id="script-y">-</b> seconds.</div>
+            <div id="instr-3" class="script-line">3) <b>DRAFT!</b></div>
+        </div>
+
+        <div id="display-panel">
+            <div id="phase-title">READY</div>
+            <div id="cards-left-display">--</div>
+            <div id="timer">00</div>
+            <div id="status-label" style="font-size: 0.9rem; color: #666; margin-bottom: 0.5rem;">Prepare to Draft</div>
+
+            <div class="controls">
+                <button id="action-btn">Start Draft</button>
+                <button id="pause-btn" disabled>Pause</button>
+                <button id="reset-btn">Reset</button>
+            </div>
+
+            <div class="nav-controls">
+                <button id="rewind-btn" class="nav-btn">« Rewind</button>
+                <button id="skip-btn" class="nav-btn">Skip »</button>
+            </div>
+        </div>
+
+        <div class="history-container">
+            <div class="history-header">History Log</div>
+            <div id="history-log"></div>
+        </div>
+
+        <div class="legal-footnote">
+            Star Wars: Unlimited is a registered trademark of Fantasy Flight Games.<br>
+            This tool is not affiliated with Fantasy Flight Games.
+        </div>
+    </div>
+
+    <audio id="beep" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
+    <audio id="finish" src="https://actions.google.com/sounds/v1/alarms/alarm_clock_short.ogg"></audio>
+
+    <script>
+        const phaseTitle = document.getElementById('phase-title');
+        const cardsDisplay = document.getElementById('cards-left-display');
+        const timerDisplay = document.getElementById('timer');
+        const actionBtn = document.getElementById('action-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const statusLabel = document.getElementById('status-label');
+        const historyLog = document.getElementById('history-log');
+        
+        const instr1 = document.getElementById('instr-1');
+        const instr2 = document.getElementById('instr-2');
+        const instr3 = document.getElementById('instr-3');
+        const scriptY = document.getElementById('script-y');
+
+        let timeLeft = 0;
+        let timerId = null;
+        let currentStepIndex = 0;
+        let isRunning = false;
+        let isPaused = false;
+
+        const schedule = [
+            { name: "Leaders", dir: "Right", x: 3, y: 15, isFirst: true },
+            { name: "Leaders", dir: "Right", x: 2, y: 10, isFirst: false },
+            ...genPack(1, "Left"),
+            { name: "Review 1", dir: "None", x: 0, y: 30, isReview: true },
+            ...genPack(2, "Right"),
+            { name: "Review 2", dir: "None", x: 0, y: 30, isReview: true },
+            ...genPack(3, "Left"),
+            { name: "Complete", dir: "None", x: 0, y: 0 }
+        ];
+
+        function genPack(n, d) {
+            const times = [60, 40, 40, 30, 30, 25, 25, 20, 15, 10, 10, 5, 5];
+            return times.map((t, i) => ({ 
+                name: `Pack ${n}`, 
+                dir: d, 
+                x: 14 - i, 
+                y: t,
+                isFirst: i === 0 
+            }));
+        }
+
+        function updateUI() {
+            const step = schedule[currentStepIndex];
+            if (!step) return;
+
+            phaseTitle.innerText = step.name;
+            cardsDisplay.innerText = step.x > 0 ? `${step.x} Cards Remaining` : (step.isReview ? "Reviewing Picks" : "Draft Finished");
+            scriptY.innerText = step.y;
+
+            // Step 1 Dynamic Phrasing
+            if (step.name === "Leaders" && step.isFirst) {
+                instr1.innerHTML = `1) Open all three boosters face down and remove the leader cards. Count <b>3 leaders</b>.`;
+            } else if (step.isFirst && !step.isReview) {
+                instr1.innerHTML = `1) Remove the cards from the booster pack face down and count <b>14 cards</b>.`;
+            } else if (step.isReview) {
+                instr1.innerHTML = `1) Review your drafted cards. Do <b>NOT</b> pass.`;
+            } else {
+                instr1.innerHTML = `1) Pass <span class="direction">${step.dir}</span> and count <b>${step.x}</b> cards.`;
+            }
+
+            // Logic to Hide Instructions 2 and 3 for Review Steps
+            if (step.isReview) {
+                instr2.style.display = 'none';
+                instr3.style.display = 'none';
+            } else {
+                instr2.style.display = 'block';
+                instr3.style.display = 'block';
+            }
+
+            if (step.y === 0) {
+                statusLabel.innerText = "All packs completed.";
+                timerDisplay.innerText = "FIN";
+                actionBtn.disabled = true;
+                return;
+            }
+
+            if (!isRunning) {
+                timerDisplay.innerText = step.y;
+                timerDisplay.classList.add('waiting');
+                timerDisplay.classList.remove('warning');
+                actionBtn.innerText = `START: ${step.name}${step.x > 0 ? ' ('+step.x+' cards)' : ''}`;
+                actionBtn.style.background = "var(--sw-blue)";
+                pauseBtn.disabled = true;
+                statusLabel.innerText = "Standing by for call...";
+            } else {
+                timerDisplay.innerText = timeLeft;
+                timerDisplay.classList.remove('waiting');
+                actionBtn.innerText = "CLOCK RUNNING";
+                actionBtn.style.background = "#333";
+                pauseBtn.disabled = false;
+                statusLabel.innerText = "Drafting in progress";
+            }
+        }
+
+        function startTimer() {
+            if (timerId) clearInterval(timerId);
+            isRunning = true;
+            isPaused = false;
+            timeLeft = schedule[currentStepIndex].y;
+            updateUI();
+            
+            timerId = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    timerDisplay.innerText = timeLeft;
+                    if (timeLeft <= 5) {
+                        document.getElementById('beep').play().catch(()=>{});
+                        timerDisplay.classList.add('warning');
+                    }
+                } else {
+                    completeStep();
+                }
+            }, 1000);
+        }
+
+        function completeStep() {
+            clearInterval(timerId);
+            document.getElementById('finish').play().catch(()=>{});
+            isRunning = false;
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerText = `[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}] Done: ${schedule[currentStepIndex].name} - ${schedule[currentStepIndex].x > 0 ? schedule[currentStepIndex].x + ' cards' : 'Review'}`;
+            historyLog.prepend(logEntry);
+            
+            currentStepIndex++;
+            updateUI();
+        }
+
+        actionBtn.addEventListener('click', () => {
+            if (!isRunning && currentStepIndex < schedule.length) startTimer();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if (!isPaused) {
+                clearInterval(timerId);
+                isPaused = true;
+                pauseBtn.innerText = "Resume";
+                statusLabel.innerText = "PAUSED";
+            } else {
+                isPaused = false;
+                pauseBtn.innerText = "Pause";
+                statusLabel.innerText = "Drafting...";
+                timerId = setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        timerDisplay.innerText = timeLeft;
+                        if (timeLeft <= 5) timerDisplay.classList.add('warning');
+                    } else {
+                        completeStep();
+                    }
+                }, 1000);
+            }
+        });
+
+        document.getElementById('skip-btn').addEventListener('click', () => {
+            if (currentStepIndex < schedule.length - 1) {
+                clearInterval(timerId);
+                isRunning = false;
+                currentStepIndex++;
+                updateUI();
+            }
+        });
+
+        document.getElementById('rewind-btn').addEventListener('click', () => {
+            if (currentStepIndex > 0) {
+                clearInterval(timerId);
+                isRunning = false;
+                currentStepIndex--;
+                updateUI();
+            }
+        });
+
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            if(confirm("Full Reset?")) location.reload();
+        });
+
+        updateUI();
+    </script>
+</body>
+</html>
